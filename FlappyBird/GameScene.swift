@@ -24,9 +24,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     // スコア用
     var score = 0
+    var itemScore = 0
     var scoreLabelNode:SKLabelNode!
+    var itemScoreLabelNode:SKLabelNode!
     var bestScoreLabelNode:SKLabelNode!
     let userDefaults:UserDefaults = UserDefaults.standard
+    
+    let sound = SKAudioNode(fileNamed: "nyu3")
+    //sound.autoplayLooped = false
+    //sound.run(SKAction.play())
     
     // SKView上にシーンが表示されたときに呼ばれるメソッド
     override func didMove(to view: SKView) {
@@ -57,6 +63,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         //setupItem()
         
         setupScoreLabel()
+        
+        sound.autoplayLooped = false
+        //sound.run(SKAction.play())
+        self.addChild(sound)
     }
     
     // 画面をタップした時に呼ばれる
@@ -93,7 +103,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 userDefaults.set(bestScore, forKey: "BEST")
                 userDefaults.synchronize()
             }
-        } else {
+        }
+        else if (contact.bodyA.categoryBitMask & itemCategory) == itemCategory || (contact.bodyB.categoryBitMask & itemCategory) == itemCategory {
+            // itemと衝突した
+            print("ItemGet")
+            itemScore += 1
+            itemScoreLabelNode.text = "Item Score:\(itemScore)"
+            
+            // 参考：https://qiita.com/mochizukikotaro/items/c4f7f234ab5a5c306285
+            if (contact.bodyA.categoryBitMask & itemCategory) == itemCategory {
+                //contact.bodyA.node.removeFromParent()
+                //var body:SKPhysicsBody = contact.bodyA
+                //body.node?.removeFromParent()
+                contact.bodyA.node?.removeFromParent()
+                play()
+            }
+            else if (contact.bodyB.categoryBitMask & itemCategory) == itemCategory {
+                //contact.bodyB.node.removeFromParent()
+                contact.bodyB.node?.removeFromParent()
+                play()
+            }
+        }
+        else {
             // 壁か地面と衝突した
             print("GameOver")
             
@@ -362,9 +393,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabelNode.text = "Score:\(score)"
         self.addChild(scoreLabelNode)
         
+        itemScore = 0
+        itemScoreLabelNode = SKLabelNode()
+        itemScoreLabelNode.fontColor = UIColor.black
+        itemScoreLabelNode.position = CGPoint(x: 10, y: self.frame.size.height - 90)
+        itemScoreLabelNode.zPosition = 100 // 一番手前に表示する
+        itemScoreLabelNode.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.left
+        itemScoreLabelNode.text = "Item Score:\(itemScore)"
+        self.addChild(itemScoreLabelNode)
+        
         bestScoreLabelNode = SKLabelNode()
         bestScoreLabelNode.fontColor = UIColor.black
-        bestScoreLabelNode.position = CGPoint(x: 10, y: self.frame.size.height - 90)
+        //bestScoreLabelNode.position = CGPoint(x: 10, y: self.frame.size.height - 90)
+        bestScoreLabelNode.position = CGPoint(x: 10, y: self.frame.size.height - 120)
         bestScoreLabelNode.zPosition = 100 // 一番手前に表示する
         bestScoreLabelNode.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.left
         
@@ -376,6 +417,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func restart() {
         score = 0
         scoreLabelNode.text = "Score:\(score)"
+        itemScore = 0
+        itemScoreLabelNode.text = "Item Score:\(itemScore)"
         
         bird.position = CGPoint(x: self.frame.size.width * 0.2, y:self.frame.size.height * 0.7)
         bird.physicsBody?.velocity = CGVector.zero
@@ -386,5 +429,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         bird.speed = 1
         scrollNode.speed = 1
+    }
+    
+    func play() { // 参考：https://hawksnowlog.blogspot.com/2017/11/spritekit-with-sound-effects.html
+        // 参考：https://stackoverflow.com/questions/28406635/attemped-to-add-a-sknode-which-already-has-a-parent-error
+        //let sound = SKAudioNode(fileNamed: "nyu3")
+        //sound.autoplayLooped = false
+        sound.run(SKAction.play())
+        //self.addChild(sound)
     }
 }
